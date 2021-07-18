@@ -3,6 +3,8 @@
 #include<vector>
 #include<sstream>
 #include<limits>
+#include<iterator>
+#include<cstddef>
 
 /*
 	Important.
@@ -16,17 +18,232 @@
 
 typedef unsigned int uint;
 
+class Polynomial;
+Polynomial trim(Polynomial);
+uint degree(Polynomial);
+double evaluate(std::vector<double>, double);
+std::string vector_to_string(std::vector<double>);
+
+class Polynomial
+{
+private:
+
+	std::vector<double> list;
+
+public:
+
+	Polynomial()
+	{
+		this->list = std::vector<double>();
+	}
+
+	Polynomial(uint n)
+	{
+		this->list = std::vector<double>(n);
+	}
+
+	Polynomial(std::vector<double>& v)
+	{
+		this->list = v;
+	}
+
+	Polynomial(const Polynomial& p)
+	{
+		*this = p;
+	}
+
+	Polynomial(uint n, double d)
+	{
+		this->list = std::vector<double>(n, d);
+	}
+
+	Polynomial(std::initializer_list<double> l)
+	{
+		list = l;
+	}
+
+	struct Iterator
+	{
+		using iterator_category = std::bidirectional_iterator_tag;
+		using difference_type = std::ptrdiff_t;
+		using value_type = double;
+		using pointer = double*;
+		using reference = double&;
+
+		Iterator(pointer ptr) : m_ptr(ptr) {}
+
+		reference operator*() { return *m_ptr; }
+		pointer operator->() { return m_ptr; }
+		Iterator& operator++() { m_ptr++; return *this; }
+		Iterator& operator++(int) { Iterator temp = *this; ++(*this); return temp; }
+		Iterator& operator--() { m_ptr--; return *this; }
+		Iterator& operator--(int) { Iterator temp = *this; --(*this); return temp; }
+		friend bool operator==(const Iterator& a, const Iterator& b) { return a.m_ptr == b.m_ptr; }
+		friend bool operator!=(const Iterator& a, const Iterator& b) { return a.m_ptr != b.m_ptr; }
+
+		pointer m_ptr;
+	};
+
+	bool empty()
+	{
+		return this->list.empty();
+	}
+
+	uint size()
+	{
+		return this->list.size();
+	}
+	/*/
+	void operator=(std::vector<double>& v)
+	{
+		this->list = v;
+	}
+	/**/
+	void operator=(const Polynomial& p)
+	{
+		this->list = p.list;
+	}
+
+	void operator=(std::initializer_list<double> l)
+	{
+		list = l;
+	}
+
+	double& operator[](uint i)
+	{
+		return list[i];
+	}
+
+	double operator()(double value)
+	{
+		return evaluate(list, value);
+	}
+
+	Iterator begin()
+	{
+		return Iterator(list.begin()._Ptr);
+	}
+
+	Iterator end()
+	{
+		return Iterator(list.end()._Ptr);
+	}
+
+	double& back()
+	{
+		return *(--end());
+		//return list[list.size() - 1];
+	}
+
+	void erase(Iterator i)
+	{
+		std::vector<double> new_list = {};
+		for (auto it = begin(); it != end(); it++)
+		{
+			if (it != i)
+				new_list.push_back(*it);
+		}
+		list = new_list;
+	}
+
+	void insert(Iterator it1, Iterator it2_b, Iterator it2_e)
+	{
+		std::vector<double> new_list = {};
+		for (auto it = begin(); it != ++end(); it++)
+		{
+			if (it == it1)
+			{
+				for (auto jt = it2_b; jt != it2_e; jt++)
+					new_list.push_back(*jt);
+			}
+			if (it != end())
+				new_list.push_back(*it);
+		}
+		//std::cout << vector_to_string(new_list) << std::endl;
+		list = new_list;
+	}
+
+	void push_back(double element)
+	{
+		list.push_back(element);
+	}
+
+	void pop_back()
+	{
+		list.pop_back();
+	}
+	/*/
+	operator std::vector<double>() const
+	{
+		return list;
+	}
+	/**/
+	/*
+	*	Generates a string representing the list of coefficients of the polynomial.
+		Ex: Polynomial p = {3,2,1};
+			cout << vector_to_string(p);
+			Output: [ 3 2 1 ]
+	*/
+	std::string to_string()
+	{
+		if (this->empty()) return "[ ]";
+		std::ostringstream os;
+		os << "[ ";
+		for (double& x : this->list)
+			os << x << " ";
+		os << "]";
+		return os.str();
+	}
+
+	/*
+		Adds n zeros (coefficientes) to the right of a polynomial.
+		Ex: vector<double> p = { 3, 2, 1 };
+		p = shift_left(p, 2);
+		p --> { 3, 2, 1, 0, 0 }
+	*/
+	void shift_left(uint n)
+	{
+		Polynomial zeroes(n, 0);
+		insert(this->end(), zeroes.begin(), zeroes.end());
+	}
+
+	/*
+		Adds n zeros (coefficients) to the left of a polynomial.
+		Ex: vector<double> p = { 3, 2, 1 };
+		p = shift_right(p, 3);
+		p --> { 0, 0, 0, 3, 2, 1 }
+	*/
+	void shift_right(uint n)
+	{
+		Polynomial zeroes(n, 0);
+		insert(this->begin(), zeroes.begin(), zeroes.end());
+	}
+
+	Polynomial derivative()
+	{
+		Polynomial polynomial = trim(*this);
+		uint degree_p = degree(polynomial);
+		if (degree_p == 0)
+			return { 0 };
+		Polynomial derivative_p(degree_p, 0);
+		for (uint i = 0; i < degree_p; i++)
+			derivative_p[i] = (degree_p - i) * polynomial[i];
+		return derivative_p;
+	}
+
+};
+
 /*
 *	Generates a string representing the list of coefficients of the polynomial.
 	Ex: vector<double> p = {3,2,1};
 		cout << vector_to_string(p); 
 		Output: [ 3 2 1 ]
 */
-std::string vector_to_string(std::vector<double> polynomial) {
-	if (polynomial.empty()) return "[ ]";
+std::string vector_to_string(std::vector<double> vector) {
+	if (vector.empty()) return "[ ]";
 	std::ostringstream os;
 	os << "[ ";
-	for (double& x : polynomial)
+	for (double& x : vector)
 		os << x << " ";
 	os << "]";
 	return os.str();
@@ -58,100 +275,59 @@ std::string intervals_to_string(std::vector<std::pair<double, double>> intervals
 		trim(p);
 		p --> {3,0,0,1,0,0}
 */
-std::vector<double> trim(std::vector<double> polynomial) {
-	std::vector<double> trimmed_polynomial = polynomial;
+Polynomial trim(Polynomial polynomial)
+{
+	Polynomial trimmed_polynomial = polynomial;
 	if (polynomial.empty()) return trimmed_polynomial;
 	auto i = trimmed_polynomial.begin();
 	while (*i == 0) {
 		trimmed_polynomial.erase(i);
-		i = trimmed_polynomial.begin();
 		if (trimmed_polynomial.empty())
 			break;
+		i = trimmed_polynomial.begin();
 	}
 	return trimmed_polynomial;
 }
 
 /*
-	Adds n zeros (coefficientes) to the right of a polynomial.
-	Ex: vector<double> p = { 3, 2, 1 };
-	p = shift_left(p, 2);
-	p --> { 3, 2, 1, 0, 0 }
-*/
-std::vector<double> shift_left(std::vector<double> polynomial, uint n)
-{
-	std::vector<double> zeroes(n, 0);
-	polynomial.insert(polynomial.end(), zeroes.begin(), zeroes.end());
-	return polynomial;
-}
-
-/*
-	Adds n zeros (coefficients) to the left of a polynomial.
-	Ex: vector<double> p = { 3, 2, 1 };
-	p = shift_right(p, 3);
-	p --> { 0, 0, 0, 3, 2, 1 }
-*/
-std::vector<double> shift_right(std::vector<double> polynomial, uint n)
-{
-	std::vector<double> zeroes(n, 0);
-	polynomial.insert(polynomial.begin(), zeroes.begin(), zeroes.end());
-	return polynomial;
-}
-
-/*
 	Gives the degree of a polynomial.
-	Ex: cout << degree({ 1, 0, 0});
+	Ex: cout << degree({ 1, 0, 0 });
 	    Output: 2
 */
-uint degree(std::vector<double> polynomial)
+uint degree(Polynomial polynomial)
 {
 	polynomial = trim(polynomial);
 	return polynomial.size() - 1;
 }
 
 /*
-	Returns a polynomial which is the derivative of the argument.
-	Ex: derivative({3,2,1}) --> {6,2}
-*/
-std::vector<double> derivative(std::vector<double> polynomial)
-{
-	polynomial = trim(polynomial);
-	uint degree_p = degree(polynomial);
-	if (degree_p == 0)
-		return { 0 };
-	std::vector<double> derivative_p(degree_p, 0);
-	for (uint i = 0; i < degree_p; i++)
-		derivative_p[i] = (degree_p - i) * polynomial[i];
-	return derivative_p;
-}
-
-/*
-	Overloaded addition operator allowing direct sum of polynomials,
-	i.e. sum between vector<double> and vector<double>.
+	Overloaded addition operator allowing direct sum of polynomials.
+	It allows the operation between a vector<double> and a Polynomial.
 
 	TODO: don't trim. Check degree and shift. Only sum from end of 
 	smaller degree to beginning of smaller degree.
 */
-std::vector<double> operator+(std::vector<double> p, std::vector<double> q)
+Polynomial operator+(Polynomial p, Polynomial q)
 {
 	p = trim(p); q = trim(q);
 	int degree_gap = p.size() - q.size();
 	if (degree_gap > 0)
-		q = shift_right(q, degree_gap);
+		q.shift_right(degree_gap);
 	else if (degree_gap < 0)
-		p = shift_right(p, -degree_gap);
-	std::vector<double> sum(p);
+		p.shift_right(-degree_gap);
+	Polynomial sum(p);
 	for (uint i = 0; i < p.size(); i++)
 		sum[i] += q[i];
 	return sum;
 }
 
-std::vector<double> operator+(std::vector<double> p, double a)
+Polynomial operator+(Polynomial p, double a)
 {
 	p.back() += a;
 	return p;
 }
 
-std::vector<double> operator+(double a, std::vector<double> p)
+Polynomial operator+(double a, Polynomial p)
 {
 	return p + a;
 }
@@ -159,7 +335,7 @@ std::vector<double> operator+(double a, std::vector<double> p)
 /*
 	Overloaded negative operator. Inverts the signal of every term of a polynomial p;
 */
-std::vector<double> operator-(std::vector<double> p)
+Polynomial operator-(Polynomial p)
 {
 	for (auto& pii : p)
 		pii = -pii;
@@ -167,30 +343,30 @@ std::vector<double> operator-(std::vector<double> p)
 }
 
 /*
-	Overloaded subtraction operator allowing direct sum of polynomials,
-	i.e. subtraction between vector<double> and vector<double>.
+	Overloaded subtraction operator allowing direct sum of polynomials.
+	It allows the operation between a vector<double> and a Polynomial.
 */
-std::vector<double> operator-(std::vector<double> p, std::vector<double> q)
+Polynomial operator-(Polynomial p, Polynomial q)
 {
 	p = trim(p); q = trim(q);
 	int degree_gap = p.size() - q.size();
 	if (degree_gap > 0)
-		q = shift_right(q, degree_gap);
+		q.shift_right(degree_gap);
 	else if (degree_gap < 0)
-		p = shift_right(p, -degree_gap);
-	std::vector<double> sum(p);
+		p.shift_right(-degree_gap);
+	Polynomial sum(p);
 	for (uint i = 0; i < p.size(); i++)
 		sum[i] -= q[i];
 	return sum;
 }
 
-std::vector<double> operator-(std::vector<double> p, double a)
+Polynomial operator-(Polynomial p, double a)
 {
 	p.back() -= a;
 	return p;
 }
 
-std::vector<double> operator-(double a, std::vector<double> p)
+Polynomial operator-(double a, Polynomial p)
 {
 	return -p + a;
 }
@@ -199,7 +375,7 @@ std::vector<double> operator-(double a, std::vector<double> p)
 	Overloaded scalar multiplication operator allowing direct product of a polynomials 
 	by a scalar, i.e. product between vector<double> and double.
 */
-std::vector<double> operator*(std::vector<double> v, double a)
+Polynomial operator*(Polynomial v, double a)
 {
 	for (auto& x : v) x *= a;
 	return v;
@@ -209,28 +385,28 @@ std::vector<double> operator*(std::vector<double> v, double a)
 	Overloaded scalar multiplication operator allowing direct product of a polynomials
 	by a scalar, i.e. product between double and vector<double>.
 */
-std::vector<double> operator*(double a, std::vector<double> v)
+Polynomial operator*(double a, Polynomial v)
 {
 	return v * a;
 }
 
-std::vector<double> operator/(std::vector<double> v, double a)
+Polynomial operator/(Polynomial v, double a)
 {
 	return v * (1. / a);
 }
 
-std::vector<double> monomial_multiplication(std::vector<double> v, double u, uint degree_u)
+Polynomial monomial_multiplication(Polynomial v, double u, uint degree_u)
 {
 	uint degree_v = degree(v);
 	uint new_degree = degree_v + degree_u;
 	v = trim(v);
-	std::vector<double> product(new_degree + 1);
+	Polynomial product(new_degree + 1);
 	for (uint i = 0; i < degree_v + 1; i++)
 		product[i] = v[i] * u;
 	return product;
 }
 
-std::vector<double> operator*(std::vector<double> p, std::vector<double> q)
+Polynomial operator*(Polynomial p, Polynomial q)
 {
 	uint new_degree = 0;
 	uint degree_p = degree(p);
@@ -239,7 +415,7 @@ std::vector<double> operator*(std::vector<double> p, std::vector<double> q)
 	q = trim(q);
 	for (uint k = 0; k < degree_q + 1; k++)
 		new_degree += (q[k] != 0) ? k : 0;
-	std::vector<double> product(degree_p + new_degree + 1);
+	Polynomial product(degree_p + new_degree + 1);
 	for (uint k = 0; k < degree_q + 1; k++)
 	{
 		if (q[k] != 0)
@@ -257,7 +433,7 @@ std::vector<double> operator*(std::vector<double> p, std::vector<double> q)
 		result.first --> {3, 0, 4, -1}
 		result.second --> {-3, 2}
 */
-std::pair<std::vector<double>, std::vector<double>> polynomial_division(std::vector<double> num, std::vector<double> den)
+std::pair<Polynomial, Polynomial> polynomial_division(Polynomial num, Polynomial den)
 {
 	num = trim(num);
 	den = trim(den);
@@ -272,7 +448,7 @@ std::pair<std::vector<double>, std::vector<double>> polynomial_division(std::vec
 	else
 		return { {0}, num };
 
-	std::vector<double> quotient;
+	Polynomial quotient;
 	double divisor = den[0];
 	for (uint i = 0; i < shift_degree + 1; i++)
 	{
@@ -300,7 +476,7 @@ std::pair<std::vector<double>, std::vector<double>> polynomial_division(std::vec
 		cout << vector_to_string(h);
 		Output: [ 3, 0, 4, -1 ]
 */
-std::vector<double> operator/(std::vector<double> num, std::vector<double> den)
+Polynomial operator/(Polynomial num, Polynomial den)
 {
 	return polynomial_division(num, den).first;
 }
@@ -314,7 +490,7 @@ std::vector<double> operator/(std::vector<double> num, std::vector<double> den)
 		cout << vector_to_string(h);
 		Output: [ -3, 2 ]
 */
-std::vector<double> operator%(std::vector<double> num, std::vector<double> den)
+Polynomial operator%(Polynomial num, Polynomial den)
 {
 	return polynomial_division(num, den).second;
 }
@@ -337,11 +513,11 @@ double evaluate(std::vector<double> v, double x)
 	Ex: cout << number_of_roots({ 1, -5, 6 }, 0, 4);
 		Output: 2
 */
-uint number_of_roots(std::vector<double> polynomial, double a, double b)
+uint number_of_roots(Polynomial polynomial, double a, double b)
 {   // We generate the Sturm sequence of polynomials
-	std::vector<std::vector<double>> g;
+	std::vector<Polynomial> g;
 	g.push_back(polynomial);
-	g.push_back(derivative(polynomial));
+	g.push_back(polynomial.derivative());
 	for (uint i = 0, j = 1; g[j].size() > 0; i++, j++)
 		g.push_back(-1 * g[i] % g[j]);
 	g.pop_back();
@@ -349,12 +525,12 @@ uint number_of_roots(std::vector<double> polynomial, double a, double b)
 	// And use it to determine v(a) and v(b)
 	uint n = g.size();
 	int v_a = 0, v_b = 0;
-	int previous_a = (evaluate(g[0], a) > 0) ? 1 : -1;
-	int	previous_b = (evaluate(g[0], b) > 0) ? 1 : -1;;
+	int previous_a = (g[0](a) > 0) ? 1 : -1;
+	int	previous_b = (g[0](b) > 0) ? 1 : -1;;
 	for (uint i = 1; i < n; i++)
 	{   // we watch for a sign change
-		double g_at_a = evaluate(g[i], a);
-		double g_at_b = evaluate(g[i], b);
+		double g_at_a = g[i](a);
+		double g_at_b = g[i](b);
 		if (g_at_a * previous_a < 0)
 			v_a++;
 		if (g_at_b * previous_b < 0)
@@ -388,7 +564,7 @@ uint number_of_roots(std::vector<double> polynomial, double a, double b)
 		cout << intervals_to_string(intervals);
 		Output: [ (-1.41, -0.92) (1.53, 2.02) ]
 */
-std::vector<std::pair<double, double>> isolate_roots(std::vector<double> polynomial, double a, double b, double tolerance = 1)
+std::vector<std::pair<double, double>> isolate_roots(Polynomial polynomial, double a, double b, double tolerance = 1)
 {
 	std::vector<std::pair<double, double>> list;
 	uint n_roots = number_of_roots(polynomial, a, b);
@@ -440,9 +616,9 @@ std::vector<std::pair<double, double>> isolate_roots(std::vector<double> polynom
 *	Implements the bisection method to shorten the interval (x1, x2) around the
 *	root. It's identical to the algorithm on the slide seen in class.
 */
-double bisection(std::vector<double> p, double x1, double x2, double epsilon, uint n_max) {
-	double Px1 = evaluate(p, x1);
-	double Px2 = evaluate(p, x2);
+double bisection(Polynomial p, double x1, double x2, double epsilon, uint n_max) {
+	double Px1 = p(x1);
+	double Px2 = p(x2);
 	if (Px1 * Px2 > 0) {
 		std::cout << "Error: function doesn't change sign between x1 and x2." << std::endl;
 		return std::numeric_limits<double>::infinity();
@@ -451,7 +627,7 @@ double bisection(std::vector<double> p, double x1, double x2, double epsilon, ui
 	double midpoint = x2;
 	for (uint i = 0; i < n_max && interval * 5 > epsilon; i++) {
 		midpoint = x1 + (x2 - x1) / 2;
-		double Pmid = evaluate(p, midpoint);
+		double Pmid = p(midpoint);
 		if (Px1 * Pmid > 0) {
 			x1 = midpoint;
 			Px1 = Pmid;
@@ -469,7 +645,7 @@ double bisection(std::vector<double> p, double x1, double x2, double epsilon, ui
 *	Searchs for a convergent root within an interval using the Newton Raphson method
 *   for polynomials. It's identical to the algorithm on the slide seen in class.
 */
-double newton_raphson(std::vector<double> polynomial , double x0, double epsilon1, double epsilon2, uint n_max) {
+double newton_raphson(Polynomial polynomial , double x0, double epsilon1, double epsilon2, uint n_max) {
 	double x = x0;
 	double dx;
 	int i;
@@ -498,12 +674,12 @@ double newton_raphson(std::vector<double> polynomial , double x0, double epsilon
 *	a polynomial. To do that, we apply the Second Circle Theorem.
 	Ex: bound_on_roots({1,-1,1,-1}) --> 2
 */
-double bound_on_roots(std::vector<double> polynomial) {
+double bound_on_roots(Polynomial polynomial) {
 	polynomial = trim(polynomial);
 	double radius = -std::numeric_limits<double>::infinity();
-	double p_0 = polynomial.at(0);
+	double p_0 = polynomial[0];
 	for (int i = 1; i < polynomial.size(); i++) { 
-		double ratio = abs(polynomial.at(i)) / abs(polynomial.at(0));
+		double ratio = abs(polynomial[i]) / abs(polynomial[0]);
 		if (ratio > radius) {
 			radius = ratio;
 		}
@@ -512,13 +688,13 @@ double bound_on_roots(std::vector<double> polynomial) {
 }
 
 /*
-	Finds all the real convergent roots of a polynomial on the interval given by I.
+	Finds all the real convergent roots of a polynomial on the interval given by I (LIE).
 	The interval argument is of the type vector<double> and must contain 2 elements,
 	the lower and upper bound, respectively. If no such interval is provided,
 	the efficient bound_on_roots function is called to find a suitable small
 	interval of search. 
 */
-std::vector<double> roots(std::vector<double> polynomial, double epsilon = 1e-6, std::vector<double> I = {}, uint n_max = 100, double tolerance = 1e-2)
+std::vector<double> roots(Polynomial polynomial, double epsilon = 1e-6, std::vector<double> I = {}, uint n_max = 100, double tolerance = 1e-2)
 {
 	uint degree_p = degree(polynomial);
 	double a = 0, b = 0, c = 0;
