@@ -10,9 +10,11 @@
 	Important.
 	----------
 	A polynomial is represented by a list of its coefficients in the usual order.
-	E.g. x^2 -5x + 6 is represented by { 1, -5, 6 }. More specifically, such list
-	is of the form vector<double>, such as
-	vector<double> p_x = { 1, -5, 6 };
+	E.g. x^2 -5x + 6 is represented by { 1, -5, 6 }. More specifically, such list 
+	is of the form of an ordered list of doubles, stored in a container of type 
+	`vector<double>` inside the class `Polynomial`. A polynomial can be instantiated 
+	such as 
+		Polynomial p_x = { 1, -5, 6 };
 		  
 */
 
